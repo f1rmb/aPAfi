@@ -50,7 +50,7 @@ class aPAfi
         void                    handleEvents();
         bool                    isTXing();
 
-        bool                    setBand(BAND_t band);
+        bool                    setBand(BAND_t band, bool ignoreTXing = false);
         BAND_t                  getBand();
         bool                    nextBand();
 

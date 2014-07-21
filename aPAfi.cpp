@@ -177,7 +177,7 @@ aPAfi::aPAfi() :
 
     // Set default band
     if (!m_catMode)
-        setBand(m_currentBand);
+        setBand(m_currentBand, true);
     else
     {
         BAND_t band = _getBandFromADCValue(analogRead(m_catPin));
@@ -185,7 +185,7 @@ aPAfi::aPAfi() :
         if ((band != bandUnknown) && (m_currentBand != band))
         {
             // Switch to band
-            setBand(band);
+            setBand(band, true);
         }
     }
 
@@ -463,9 +463,9 @@ bool aPAfi::nextBand()
     return (setBand((BAND_t)band));
 }
 
-bool aPAfi::setBand(BAND_t band)
+bool aPAfi::setBand(BAND_t band, bool ignoreTXing)
 {
-    if (!m_Initialized || isTXing())
+    if (!m_Initialized || (!ignoreTXing && isTXing()))
         return (false);
 
     switch (band)
