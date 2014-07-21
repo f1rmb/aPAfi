@@ -428,7 +428,7 @@ void aPAfi::_updateBAND()
     }
 
 
-    // Updata datapins
+    // Update datapins
     uint8_t bits = _getBitsFromBand(m_currentBand);
 
     if (bits != 0xF)
