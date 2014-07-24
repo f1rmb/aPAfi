@@ -45,6 +45,7 @@ class aPAfi
         aPAfi();
         ~aPAfi();
 
+        bool                    Initialize();
         bool                    isInitialized();
 
         void                    handleEvents();
@@ -72,6 +73,7 @@ class aPAfi
 
     private:
         bool                    m_Initialized;
+
         // Pins
         uint8_t                 m_bandPins[bandMAX];
         uint8_t                 m_dataPins[4];
@@ -80,7 +82,6 @@ class aPAfi
         uint8_t                 m_catPin;
         uint8_t                 m_catLEDPin;
         uint8_t                 m_highTempPin;
-
         BAND_t                  m_currentBand;
         bool                    m_catMode;
 

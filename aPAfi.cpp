@@ -26,7 +26,7 @@
 static const int16_t    BUTTON_ADC_V                = 793;  // ADC value
 static const int16_t    DEFAULT_ADC_TOLERANCE       = 10;   // +/- tolerance
 static const uint16_t   DEFAULT_LONGPRESS_THRESHOLD = 2000; // ms
-static const uint16_t   CRITICAL_TEMPERATURE        = 45;   // Temperature's Alarm Threshold
+static const uint16_t   CRITICAL_TEMPERATURE        = 45;   // Temperature alarm threshold
 
 // EEPROM data offsets
 static const int        EEPROM_ADDR_MAGIC           = 0; // 0xDEAD
@@ -131,7 +131,15 @@ aPAfi::aPAfi() :
     pinMode(m_txPin, INPUT);
     pinMode(m_catLEDPin, OUTPUT);
     pinMode(m_highTempPin, OUTPUT);
+}
 
+aPAfi::~aPAfi()
+{
+    //dtor
+}
+
+bool aPAfi::Initialize()
+{
     m_Initialized = true;
 
     // Select button is pressed on startup: EEPROM RESET
@@ -151,52 +159,42 @@ aPAfi::aPAfi() :
     else
         _eepromRestore();
 
+
     // Ensure CAT connector is plugged
-    if (m_catMode)
+    int ADCvalue = 0;
+
+    for (uint8_t i = 0; i < 5; i++)
     {
-        int     v = analogRead(m_catPin);
-        uint8_t c = 0;
-
-        delay(5);
-
-        for (uint8_t i = 0; i < 5; i++)
-        {
-            int w = analogRead(m_catPin);
-
-            if((w <= (v - DEFAULT_ADC_TOLERANCE)) || (w >= (v + DEFAULT_ADC_TOLERANCE)))
-                c++;
-
-            delay(5);
-        }
-
-        // ADC pin is floating, no cable plugged (wild guess)
-        if (c > 3)
-            m_catMode = false;
-
+        delay(200);
+        ADCvalue += analogRead(m_catPin);
     }
+
+    ADCvalue /= 5;
+
+    if (m_catMode && (ADCvalue > (static_cast<int16_t>(pgm_read_word(&bands[sizeof(bands) / sizeof(bands[0]) - 2].ADCv)) + DEFAULT_ADC_TOLERANCE)))
+        m_catMode = false;
+    else if ((m_catMode == false) &&
+             ( (ADCvalue > static_cast<int16_t>(pgm_read_word(&bands[band160].ADCv) - DEFAULT_ADC_TOLERANCE)) &&
+               (ADCvalue < static_cast<int16_t>(pgm_read_word(&bands[sizeof(bands) / sizeof(bands[0]) - 2].ADCv) + DEFAULT_ADC_TOLERANCE)) ))
+        m_catMode = true;
 
     // Set default band
     if (!m_catMode)
         setBand(m_currentBand, true);
     else
     {
-        BAND_t band = _getBandFromADCValue(analogRead(m_catPin));
+        BAND_t band = _getBandFromADCValue(ADCvalue);
 
-        if ((band != bandUnknown) && (m_currentBand != band))
-        {
-            // Switch to band
-            setBand(band, true);
-        }
+        // Switch to band
+        setBand(band != bandUnknown ? band : m_currentBand, true);
     }
 
     // Update CAT Automode PIN
     _updateCATStatus();
+
+    return (m_Initialized);
 }
 
-aPAfi::~aPAfi()
-{
-    //dtor
-}
 
 /////////////////////////////////
 //
@@ -275,8 +273,6 @@ uint8_t aPAfi::_getBitsFromBand(BAND_t band)
 
 BAND_t aPAfi::_getBandFromADCValue(int16_t value)
 {
-    //Serial.print("CAT ADC: ");
-    //Serial.println(value, DEC);
     for (size_t i = 0; static_cast<int16_t>(pgm_read_word(&bands[i].band)) != bandUnknown; i++)
     {
         if ((value > static_cast<int16_t>(pgm_read_word(&bands[i].ADCv) - DEFAULT_ADC_TOLERANCE)) && (value < static_cast<int16_t>(pgm_read_word(&bands[i].ADCv) + DEFAULT_ADC_TOLERANCE)))
